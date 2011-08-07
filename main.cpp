@@ -137,6 +137,17 @@ float matrix_compare(ublas::matrix<float>& res, ublas::matrix<float>& ref) {
     return diff;
 }
 
+bool check_bidiag(ublas::matrix<float>& A) {
+    const float EPS = 0.000001;
+
+    for(unsigned int i = 0; i < A.size1(); i++) {
+        for(unsigned int j = 0; j < A.size2(); j++) {
+            if((std::abs(A(i, j)) > EPS) && (i != j) && ((i + 1) != j)) return false;
+        }
+    }
+    return true;
+}
+
 int main() {
     srand(time(0));
 
@@ -149,7 +160,7 @@ int main() {
     f.close();
     */
 
-    random_fill(in, 128);
+    random_fill(in, 64);
 
     ublas::matrix<float> ref = in;
 
@@ -164,7 +175,7 @@ int main() {
     result = ublas::prod(QQL, result);
     std::cout << result << "\n";
 
-    std::cout << "DIFF = " << matrix_compare(result, ref) << "\n";
-
+    std::cout << "DIFF    = " << matrix_compare(result, ref) << "\n";
+    std::cout << "Is bidiag " << check_bidiag(in) << "\n";
 	return 0;
 }

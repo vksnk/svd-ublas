@@ -2,10 +2,12 @@
 #include <fstream>
 
 #include <cmath>
+#include <ctime>
 
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
+
 
 namespace ublas = boost::numeric::ublas;
 
@@ -113,16 +115,29 @@ void bidiag(ublas::matrix<float>& A,
     }
 }
 
-int main() {
-	std::cout << "uBLAS\n";
-    std::fstream f;
-    ublas::matrix<float> in;
-    ublas::vector<float> v;
+void random_fill(ublas::matrix<float>& A, unsigned int size) {
+    A.resize(size, size);
 
+    for(unsigned int i = 0; i < A.size1(); i++) {
+        for(unsigned int j = 0; j < A.size2(); j++) {
+            A(i, j) = (float)rand() / RAND_MAX;
+        }
+    }
+}
+
+int main() {
+    srand(time(0));
+
+    ublas::matrix<float> in;
+
+    /*
+    std::fstream f;
     f.open("data/wiki.example", std::fstream::in);
     f >> in;
-
     f.close();
+    */
+
+    random_fill(in, 128);
 
     std::cout << in << "\n";
 

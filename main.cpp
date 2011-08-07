@@ -11,6 +11,12 @@ namespace ublas = boost::numeric::ublas;
 
 //#define DEBUG
 
+void eye(ublas::matrix<float>& m) {
+    for(unsigned int i = 0; i < m.size1(); i++)
+        for(unsigned int j = 0; j < m.size2(); j++)
+            m(i, j) = (i == j)?1:0;
+}
+
 float sign(float val) {
     return val >= 0?1:-1;
 }
@@ -62,10 +68,7 @@ void householder(ublas::matrix<float>& A,
 
 
     ublas::matrix<float> Q(size, size);
-
-    for(unsigned int i = 0; i < Q.size1(); i++)
-        for(unsigned int j = 0; j < Q.size2(); j++)
-            Q(i, j) = (i == j)?1:0;
+    eye(Q);
 
     for(unsigned int i = start; i < Q.size1(); i++) {
         for(unsigned int j = start; j < Q.size2(); j++) {
@@ -104,11 +107,9 @@ int main() {
     ublas::matrix<float> QQL(row_num, row_num);
     ublas::matrix<float> QQR(row_num, row_num);
 
-    for(unsigned int i = 0; i < QQL.size1(); i++)
-        for(unsigned int j = 0; j < QQL.size2(); j++) {
-            QQL(i, j) = (i == j)?1:0;
-            QQR(i, j) = (i == j)?1:0;
-        }
+    eye(QQL);
+    eye(QQR);
+
     for(unsigned int i = 0; i < row_num - 1; i++) {
         householder(in, QQL, i, i, true);
         if(i < row_num - 2) householder(in, QQR, i, i + 1, false);

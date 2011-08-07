@@ -138,7 +138,7 @@ float matrix_compare(ublas::matrix<float>& res, ublas::matrix<float>& ref) {
 }
 
 bool check_bidiag(ublas::matrix<float>& A) {
-    const float EPS = 0.000001;
+    const float EPS = 0.00001;
 
     for(unsigned int i = 0; i < A.size1(); i++) {
         for(unsigned int j = 0; j < A.size2(); j++) {

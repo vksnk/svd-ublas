@@ -89,6 +89,30 @@ void householder(ublas::matrix<float>& A,
     }
 }
 
+void bidiag(ublas::matrix<float>& A,
+            ublas::matrix<float>& QQL,
+            ublas::matrix<float>& QQR) {
+    unsigned int row_num = A.size1();
+
+    QQL.resize(row_num, row_num);
+    QQR.resize(row_num, row_num);
+
+    eye(QQL);
+    eye(QQR);
+
+    for(unsigned int i = 0; i < row_num - 1; i++) {
+        householder(A, QQL, i, i, true);
+        if(i < row_num - 2) householder(A, QQR, i, i + 1, false);
+
+#ifdef DEBUG
+        std::cout << "QQL = " << QQL << "\n";
+        std::cout << "QQR = " << QQR << "\n";
+        std::cout << "AAA = " << A << "\n";
+        std::cout << "*****************\n";
+#endif
+    }
+}
+
 int main() {
 	std::cout << "uBLAS\n";
     std::fstream f;
@@ -102,25 +126,10 @@ int main() {
 
     std::cout << in << "\n";
 
-    unsigned int row_num = in.size1();
+    ublas::matrix<float> QQL;
+    ublas::matrix<float> QQR;
 
-    ublas::matrix<float> QQL(row_num, row_num);
-    ublas::matrix<float> QQR(row_num, row_num);
-
-    eye(QQL);
-    eye(QQR);
-
-    for(unsigned int i = 0; i < row_num - 1; i++) {
-        householder(in, QQL, i, i, true);
-        if(i < row_num - 2) householder(in, QQR, i, i + 1, false);
-
-#ifdef DEBUG
-        std::cout << "QQL = " << QQL << "\n";
-        std::cout << "QQR = " << QQR << "\n";
-        std::cout << "AAA = " << in << "\n";
-        std::cout << "*****************\n";
-#endif
-    }
+    bidiag(in, QQL, QQR);
 
     ublas::matrix<float> result = ublas::prod(in, QQR);
     result = ublas::prod(QQL, result);

@@ -9,7 +9,7 @@
 
 namespace ublas = boost::numeric::ublas;
 
-#define DEBUG
+//#define DEBUG
 
 float sign(float val) {
     return val >= 0?1:-1;
@@ -29,12 +29,19 @@ void normalize(ublas::vector<float>& x) {
     }
 }
 
-void house_column(ublas::matrix<float>& A,
-               unsigned int row_start,
-               unsigned int col_start) {
-
-    ublas::vector<float> x(A.size1() - row_start);
-    for(unsigned int i = row_start ; i < A.size1(); i++) x(i - row_start) = A(i, col_start);
+void householder(ublas::matrix<float>& A,
+                 ublas::matrix<float>& QQ,
+                    unsigned int row_start,
+                    unsigned int col_start,
+                    bool column) {
+    unsigned int size = column?A.size1():A.size2();
+    unsigned int start = column?row_start:col_start;
+    ublas::vector<float> x(size - start);
+    for(unsigned int i = start ; i < size; i++)
+        if(column)
+            x(i - start) = A(i, col_start);
+        else
+            x(i - start) = A(row_start, i);
 
     float x_norm = norm(x);
     float alpha = -sign(x(0)) * x_norm;
@@ -53,22 +60,30 @@ void house_column(ublas::matrix<float>& A,
     std::cout << "v = " << v << "\n";
 #endif
 
-#ifdef DEBUG
-    ublas::matrix<float> Q(A.size1(), A.size1());
+
+    ublas::matrix<float> Q(size, size);
 
     for(unsigned int i = 0; i < Q.size1(); i++)
         for(unsigned int j = 0; j < Q.size2(); j++)
             Q(i, j) = (i == j)?1:0;
 
-    for(unsigned int i = row_start; i < Q.size1(); i++) {
-        for(unsigned int j = row_start; j < Q.size2(); j++) {
-            Q(i, j) = Q(i, j) - 2 * v(i - row_start) * v(j - row_start);
+    for(unsigned int i = start; i < Q.size1(); i++) {
+        for(unsigned int j = start; j < Q.size2(); j++) {
+            Q(i, j) = Q(i, j) - 2 * v(i - start) * v(j - start);
         }
     }
 
-    std::cout << "Q = " << Q << "\n";
+#ifdef DEBUG
+    std::cout << "Q  = " << Q << "\n";
 #endif
-    A = ublas::prod(Q, A);
+
+    if(column) {
+        A = ublas::prod(Q, A);
+        QQ = ublas::prod(QQ, Q);
+    } else {
+        A = ublas::prod(A, Q);
+        QQ = ublas::prod(Q, QQ);
+    }
 }
 
 int main() {
@@ -77,23 +92,38 @@ int main() {
     ublas::matrix<float> in;
     ublas::vector<float> v;
 
-    f.open("data/wiki.qr.example", std::fstream::in);
+    f.open("data/wiki.example", std::fstream::in);
     f >> in;
 
     f.close();
 
     std::cout << in << "\n";
 
-    unsigned int row_num = in.size2();
+    unsigned int row_num = in.size1();
 
+    ublas::matrix<float> QQL(row_num, row_num);
+    ublas::matrix<float> QQR(row_num, row_num);
+
+    for(unsigned int i = 0; i < QQL.size1(); i++)
+        for(unsigned int j = 0; j < QQL.size2(); j++) {
+            QQL(i, j) = (i == j)?1:0;
+            QQR(i, j) = (i == j)?1:0;
+        }
     for(unsigned int i = 0; i < row_num - 1; i++) {
-        house_column(in, i, i);
+        householder(in, QQL, i, i, true);
+        if(i < row_num - 2) householder(in, QQR, i, i + 1, false);
+
 #ifdef DEBUG
-        std::cout << "A = " << in << "\n";
+        std::cout << "QQL = " << QQL << "\n";
+        std::cout << "QQR = " << QQR << "\n";
+        std::cout << "AAA = " << in << "\n";
+        std::cout << "*****************\n";
 #endif
     }
 
-    std::cout << in << "\n";
+    ublas::matrix<float> result = ublas::prod(in, QQR);
+    result = ublas::prod(QQL, result);
+    std::cout << result << "\n";
 
 	return 0;
 }

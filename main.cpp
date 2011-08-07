@@ -125,6 +125,18 @@ void random_fill(ublas::matrix<float>& A, unsigned int size) {
     }
 }
 
+float matrix_compare(ublas::matrix<float>& res, ublas::matrix<float>& ref) {
+    float diff = 0.0;
+
+    for(unsigned int i = 0; i < res.size1(); i++) {
+        for(unsigned int j = 0; j < res.size2(); j++) {
+            diff = std::max(diff, std::abs(res(i, j) - ref(i,j)));
+        }
+    }
+
+    return diff;
+}
+
 int main() {
     srand(time(0));
 
@@ -139,6 +151,8 @@ int main() {
 
     random_fill(in, 128);
 
+    ublas::matrix<float> ref = in;
+
     std::cout << in << "\n";
 
     ublas::matrix<float> QQL;
@@ -149,6 +163,8 @@ int main() {
     ublas::matrix<float> result = ublas::prod(in, QQR);
     result = ublas::prod(QQL, result);
     std::cout << result << "\n";
+
+    std::cout << "DIFF = " << matrix_compare(result, ref) << "\n";
 
 	return 0;
 }

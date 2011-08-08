@@ -83,11 +83,34 @@ void householder(ublas::matrix<float>& A,
 #endif
 
     if(column) {
-        A = ublas::prod(Q, A);
-        QQ = ublas::prod(QQ, Q);
+//        A = ublas::prod(Q, A);
+        for(unsigned int i = start; i < size; i++) {
+            float sum_Av = 0.0;
+
+            for(unsigned int j = start; j < size; j++) {
+                sum_Av = sum_Av + (v(j - start) * A(j, i));
+            }
+
+            for(unsigned int j = start; j < size; j++) {
+                A(j, i) = A(j, i) - 2 * v(j - start) * sum_Av;
+            }
+        }
+//        QQ = ublas::prod(QQ, Q);
     } else {
-        A = ublas::prod(A, Q);
-        QQ = ublas::prod(Q, QQ);
+//        A = ublas::prod(A, Q);
+//        QQ = ublas::prod(Q, QQ);
+        for(unsigned int i = row_start; i < size; i++) {
+            float sum_Av = 0.0;
+
+            for(unsigned int j = start; j < size; j++) {
+                sum_Av = sum_Av + (v(j - start) * A(i, j));
+            }
+
+            for(unsigned int j = start; j < size; j++) {
+                A(i, j) = A(i, j) - 2 * v(j - start) * sum_Av;
+            }
+        }
+
     }
 }
 
@@ -138,11 +161,14 @@ float matrix_compare(ublas::matrix<float>& res, ublas::matrix<float>& ref) {
 }
 
 bool check_bidiag(ublas::matrix<float>& A) {
-    const float EPS = 0.00001;
+    const float EPS = 0.0001;
 
     for(unsigned int i = 0; i < A.size1(); i++) {
         for(unsigned int j = 0; j < A.size2(); j++) {
-            if((std::abs(A(i, j)) > EPS) && (i != j) && ((i + 1) != j)) return false;
+            if((std::abs(A(i, j)) > EPS) && (i != j) && ((i + 1) != j)) {
+                std::cout << "Failed at " << i << " " << j << " " << A(i, j) << "\n";
+                return false;
+            }
         }
     }
     return true;
@@ -152,29 +178,30 @@ int main() {
     srand(time(0));
 
     ublas::matrix<float> in;
-
-    /*
+/*
     std::fstream f;
-    f.open("data/wiki.example", std::fstream::in);
+    f.open("data/wiki.qr.example", std::fstream::in);
     f >> in;
     f.close();
-    */
-
-    random_fill(in, 64);
+*/
+    random_fill(in, 1024);
 
     ublas::matrix<float> ref = in;
-
+#ifdef DEBUG
     std::cout << in << "\n";
-
+#endif
     ublas::matrix<float> QQL;
     ublas::matrix<float> QQR;
 
     bidiag(in, QQL, QQR);
 
-    ublas::matrix<float> result = ublas::prod(in, QQR);
+    ublas::matrix<float> result;
+#ifdef DEBUG
+    result = ublas::prod(in, QQR);
     result = ublas::prod(QQL, result);
-    std::cout << result << "\n";
 
+    std::cout << result << "\n";
+#endif
     std::cout << "DIFF    = " << matrix_compare(result, ref) << "\n";
     std::cout << "Is bidiag " << check_bidiag(in) << "\n";
 	return 0;

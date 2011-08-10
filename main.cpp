@@ -11,16 +11,16 @@
 
 namespace ublas = boost::numeric::ublas;
 
-//#define DEBUG
+#define DEBUG
 
 void eye(ublas::matrix<float>& m) {
     for(unsigned int i = 0; i < m.size1(); i++)
         for(unsigned int j = 0; j < m.size2(); j++)
-            m(i, j) = (i == j)?1:0;
+            m(i, j) = (i == j)?1.0f:0.0f;
 }
 
 float sign(float val) {
-    return val >= 0?1:-1;
+    return val >= 0.0f?1.0f:-1.0f;
 }
 
 float norm(ublas::vector<float>& x) {
@@ -161,7 +161,7 @@ float matrix_compare(ublas::matrix<float>& res, ublas::matrix<float>& ref) {
 }
 
 bool check_bidiag(ublas::matrix<float>& A) {
-    const float EPS = 0.0001;
+    const float EPS = 0.0001f;
 
     for(unsigned int i = 0; i < A.size1(); i++) {
         for(unsigned int j = 0; j < A.size2(); j++) {
@@ -175,16 +175,16 @@ bool check_bidiag(ublas::matrix<float>& A) {
 }
 
 int main() {
-    srand(time(0));
+    srand((unsigned int)time(0));
 
     ublas::matrix<float> in;
-/*
+
     std::fstream f;
     f.open("data/wiki.qr.example", std::fstream::in);
     f >> in;
     f.close();
-*/
-    random_fill(in, 1024);
+
+    //random_fill(in, 1024);
 
     ublas::matrix<float> ref = in;
 #ifdef DEBUG

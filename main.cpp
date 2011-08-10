@@ -11,7 +11,7 @@
 
 namespace ublas = boost::numeric::ublas;
 
-#define DEBUG
+//#define DEBUG
 
 void eye(ublas::matrix<float>& m) {
     for(unsigned int i = 0; i < m.size1(); i++)
@@ -44,15 +44,20 @@ void householder(ublas::matrix<float>& A,
                     bool column) {
     unsigned int size = column?A.size1():A.size2();
     unsigned int start = column?row_start:col_start;
-    ublas::vector<float> x(size - start);
-    for(unsigned int i = start ; i < size; i++)
-        if(column)
-            x(i - start) = A(i, col_start);
-        else
-            x(i - start) = A(row_start, i);
+    ublas::vector<float> x(size);
+	for(unsigned int i = 0 ; i < size; i++) {
+		if(i < start) {
+			x(i) = 0;
+		} else {
+			if(column)
+				x(i) = A(i, col_start);
+			else
+				x(i) = A(row_start, i);
+		}
+	}
 
     float x_norm = norm(x);
-    float alpha = -sign(x(0)) * x_norm;
+    float alpha = -sign(x(start)) * x_norm;
 
 #ifdef DEBUG
     std::cout << "||x|| = " << x_norm << "\n";
@@ -61,7 +66,7 @@ void householder(ublas::matrix<float>& A,
 
     ublas::vector<float> v = x;
 
-    v(0) += alpha;
+    v(start) += alpha;
     normalize(v);
 
 #ifdef DEBUG
@@ -69,45 +74,49 @@ void householder(ublas::matrix<float>& A,
 #endif
 
 
-    ublas::matrix<float> Q(size, size);
+
+	ublas::matrix<float> Q(size, size);
+
+#ifdef DEBUG
     eye(Q);
 
     for(unsigned int i = start; i < Q.size1(); i++) {
         for(unsigned int j = start; j < Q.size2(); j++) {
-            Q(i, j) = Q(i, j) - 2 * v(i - start) * v(j - start);
+            Q(i, j) = Q(i, j) - 2 * v(i) * v(j);
         }
     }
 
-#ifdef DEBUG
     std::cout << "Q  = " << Q << "\n";
 #endif
 
     if(column) {
-//        A = ublas::prod(Q, A);
-        for(unsigned int i = start; i < size; i++) {
-            float sum_Av = 0.0;
+        for(unsigned int i = 0; i < size; i++) {
+            float sum_Av = 0.0f;
+			float sum_Qv = 0.0f;
 
-            for(unsigned int j = start; j < size; j++) {
-                sum_Av = sum_Av + (v(j - start) * A(j, i));
+            for(unsigned int j = 0; j < size; j++) {
+                sum_Av = sum_Av + (v(j) * A(j, i));
+				sum_Qv = sum_Qv + (v(j) * QQ(i, j));
             }
 
-            for(unsigned int j = start; j < size; j++) {
-                A(j, i) = A(j, i) - 2 * v(j - start) * sum_Av;
+            for(unsigned int j = 0; j < size; j++) {
+                A(j, i) = A(j, i) - 2 * v(j) * sum_Av;
+				QQ(i, j) = QQ(i, j) - 2 * v(j) * sum_Qv;
             }
         }
-//        QQ = ublas::prod(QQ, Q);
     } else {
-//        A = ublas::prod(A, Q);
-//        QQ = ublas::prod(Q, QQ);
-        for(unsigned int i = row_start; i < size; i++) {
-            float sum_Av = 0.0;
+        for(unsigned int i = 0; i < size; i++) {
+            float sum_Av = 0.0f;
+			float sum_Qv = 0.0f;
 
-            for(unsigned int j = start; j < size; j++) {
-                sum_Av = sum_Av + (v(j - start) * A(i, j));
-            }
+            for(unsigned int j = 0; j < size; j++) {
+                sum_Av = sum_Av + (v(j) * A(i, j));
+				sum_Qv = sum_Qv + (v(j) * QQ(j ,i));
+			}
 
-            for(unsigned int j = start; j < size; j++) {
-                A(i, j) = A(i, j) - 2 * v(j - start) * sum_Av;
+            for(unsigned int j = 0; j < size; j++) {
+                A(i, j) = A(i, j) - 2 * v(j) * sum_Av;
+				QQ(j, i) = QQ(j, i) - 2 * v(j) * sum_Qv;
             }
         }
 
@@ -178,13 +187,13 @@ int main() {
     srand((unsigned int)time(0));
 
     ublas::matrix<float> in;
-
+/*
     std::fstream f;
     f.open("data/wiki.qr.example", std::fstream::in);
     f >> in;
     f.close();
-
-    //random_fill(in, 1024);
+*/
+    random_fill(in, 1024);
 
     ublas::matrix<float> ref = in;
 #ifdef DEBUG
@@ -196,11 +205,11 @@ int main() {
     bidiag(in, QQL, QQR);
 
     ublas::matrix<float> result;
-#ifdef DEBUG
+#if 1
     result = ublas::prod(in, QQR);
     result = ublas::prod(QQL, result);
 
-    std::cout << result << "\n";
+    //std::cout << result << "\n";
 #endif
     std::cout << "DIFF    = " << matrix_compare(result, ref) << "\n";
     std::cout << "Is bidiag " << check_bidiag(in) << "\n";

@@ -11,7 +11,8 @@
 
 namespace ublas = boost::numeric::ublas;
 
-//#define DEBUG
+#define DEBUG
+#define CHECK_RESULT
 
 void eye(ublas::matrix<float>& m) {
     for(unsigned int i = 0; i < m.size1(); i++)
@@ -75,9 +76,10 @@ void householder(ublas::matrix<float>& A,
 
 
 
-	ublas::matrix<float> Q(size, size);
+	ublas::matrix<float> Q;
 
 #ifdef DEBUG
+	Q.resize(size, size);
     eye(Q);
 
     for(unsigned int i = start; i < Q.size1(); i++) {
@@ -90,36 +92,34 @@ void householder(ublas::matrix<float>& A,
 #endif
 
     if(column) {
-        for(unsigned int i = 0; i < size; i++) {
+        for(unsigned int i = 0; i < A.size2(); i++) {
             float sum_Av = 0.0f;
+
+			for(unsigned int j = 0; j < A.size1(); j++) sum_Av = sum_Av + (v(j) * A(j, i));
+            for(unsigned int j = 0; j < A.size1(); j++) A(j, i) = A(j, i) - 2 * v(j) * sum_Av;
+        }
+
+		for(unsigned int i = 0; i < A.size1(); i++) {
 			float sum_Qv = 0.0f;
 
-            for(unsigned int j = 0; j < size; j++) {
-                sum_Av = sum_Av + (v(j) * A(j, i));
-				sum_Qv = sum_Qv + (v(j) * QQ(i, j));
-            }
-
-            for(unsigned int j = 0; j < size; j++) {
-                A(j, i) = A(j, i) - 2 * v(j) * sum_Av;
-				QQ(i, j) = QQ(i, j) - 2 * v(j) * sum_Qv;
-            }
+			for(unsigned int j = 0; j < A.size2(); j++) sum_Qv = sum_Qv + (v(j) * QQ(i, j));
+            for(unsigned int j = 0; j < A.size2(); j++) QQ(i, j) = QQ(i, j) - 2 * v(j) * sum_Qv;
         }
+
     } else {
-        for(unsigned int i = 0; i < size; i++) {
+        for(unsigned int i = 0; i < A.size1(); i++) {
             float sum_Av = 0.0f;
-			float sum_Qv = 0.0f;
 
-            for(unsigned int j = 0; j < size; j++) {
-                sum_Av = sum_Av + (v(j) * A(i, j));
-				sum_Qv = sum_Qv + (v(j) * QQ(j ,i));
-			}
-
-            for(unsigned int j = 0; j < size; j++) {
-                A(i, j) = A(i, j) - 2 * v(j) * sum_Av;
-				QQ(j, i) = QQ(j, i) - 2 * v(j) * sum_Qv;
-            }
+			for(unsigned int j = 0; j < A.size2(); j++) sum_Av = sum_Av + (v(j) * A(i, j));
+            for(unsigned int j = 0; j < A.size2(); j++) A(i, j) = A(i, j) - 2 * v(j) * sum_Av;
         }
 
+		for(unsigned int i = 0; i < A.size2(); i++) {
+			float sum_Qv = 0.0f;
+
+            for(unsigned int j = 0; j < A.size1(); j++) sum_Qv = sum_Qv + (v(j) * QQ(j ,i));
+            for(unsigned int j = 0; j < A.size1(); j++) QQ(j, i) = QQ(j, i) - 2 * v(j) * sum_Qv;
+        }
     }
 }
 
@@ -127,16 +127,18 @@ void bidiag(ublas::matrix<float>& A,
             ublas::matrix<float>& QQL,
             ublas::matrix<float>& QQR) {
     unsigned int row_num = A.size1();
+	unsigned int col_num = A.size2();
 
     QQL.resize(row_num, row_num);
-    QQR.resize(row_num, row_num);
+    QQR.resize(col_num, col_num);
 
     eye(QQL);
     eye(QQR);
 
-    for(unsigned int i = 0; i < row_num - 1; i++) {
+	unsigned int to = std::min(row_num, col_num);
+    for(unsigned int i = 0; i < to - 1; i++) {
         householder(A, QQL, i, i, true);
-        if(i < row_num - 2) householder(A, QQR, i, i + 1, false);
+        if(i < to - 2) householder(A, QQR, i, i + 1, false);
 
 #ifdef DEBUG
         std::cout << "QQL = " << QQL << "\n";
@@ -147,8 +149,8 @@ void bidiag(ublas::matrix<float>& A,
     }
 }
 
-void random_fill(ublas::matrix<float>& A, unsigned int size) {
-    A.resize(size, size);
+void random_fill(ublas::matrix<float>& A, unsigned int size1, unsigned int size2) {
+    A.resize(size1, size2);
 
     for(unsigned int i = 0; i < A.size1(); i++) {
         for(unsigned int j = 0; j < A.size2(); j++) {
@@ -187,13 +189,13 @@ int main() {
     srand((unsigned int)time(0));
 
     ublas::matrix<float> in;
-/*
+
     std::fstream f;
-    f.open("data/wiki.qr.example", std::fstream::in);
+    f.open("data/pysvd.example", std::fstream::in);
     f >> in;
     f.close();
-*/
-    random_fill(in, 1024);
+
+//    random_fill(in, 1024);
 
     ublas::matrix<float> ref = in;
 #ifdef DEBUG
@@ -205,13 +207,15 @@ int main() {
     bidiag(in, QQL, QQR);
 
     ublas::matrix<float> result;
-#if 1
+
+#ifdef CHECK_RESULT
     result = ublas::prod(in, QQR);
     result = ublas::prod(QQL, result);
 
     //std::cout << result << "\n";
 #endif
-    std::cout << "DIFF    = " << matrix_compare(result, ref) << "\n";
+
+	std::cout << "DIFF    = " << matrix_compare(result, ref) << "\n";
     std::cout << "Is bidiag " << check_bidiag(in) << "\n";
 	return 0;
 }

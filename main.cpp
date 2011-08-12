@@ -11,8 +11,8 @@
 
 namespace ublas = boost::numeric::ublas;
 
-#define DEBUG
-#define CHECK_RESULT
+//#define DEBUG
+//#define CHECK_RESULT
 
 void eye(ublas::matrix<float>& m) {
     for(unsigned int i = 0; i < m.size1(); i++)
@@ -45,6 +45,9 @@ void householder(ublas::matrix<float>& A,
                     bool column) {
     unsigned int size = column?A.size1():A.size2();
     unsigned int start = column?row_start:col_start;
+
+    if((start + 1) >= size) return ;
+
     ublas::vector<float> x(size);
 	for(unsigned int i = 0 ; i < size; i++) {
 		if(i < start) {
@@ -102,8 +105,8 @@ void householder(ublas::matrix<float>& A,
 		for(unsigned int i = 0; i < A.size1(); i++) {
 			float sum_Qv = 0.0f;
 
-			for(unsigned int j = 0; j < A.size2(); j++) sum_Qv = sum_Qv + (v(j) * QQ(i, j));
-            for(unsigned int j = 0; j < A.size2(); j++) QQ(i, j) = QQ(i, j) - 2 * v(j) * sum_Qv;
+            for(unsigned int j = 0; j < A.size1(); j++) sum_Qv = sum_Qv + (v(j) * QQ(i, j));
+            for(unsigned int j = 0; j < A.size1(); j++) QQ(i, j) = QQ(i, j) - 2 * v(j) * sum_Qv;
         }
 
     } else {
@@ -117,8 +120,8 @@ void householder(ublas::matrix<float>& A,
 		for(unsigned int i = 0; i < A.size2(); i++) {
 			float sum_Qv = 0.0f;
 
-            for(unsigned int j = 0; j < A.size1(); j++) sum_Qv = sum_Qv + (v(j) * QQ(j ,i));
-            for(unsigned int j = 0; j < A.size1(); j++) QQ(j, i) = QQ(j, i) - 2 * v(j) * sum_Qv;
+            for(unsigned int j = 0; j < A.size2(); j++) sum_Qv = sum_Qv + (v(j) * QQ(j ,i));
+            for(unsigned int j = 0; j < A.size2(); j++) QQ(j, i) = QQ(j, i) - 2 * v(j) * sum_Qv;
         }
     }
 }
@@ -136,9 +139,9 @@ void bidiag(ublas::matrix<float>& A,
     eye(QQR);
 
 	unsigned int to = std::min(row_num, col_num);
-    for(unsigned int i = 0; i < to - 1; i++) {
+    for(unsigned int i = 0; i < to; i++) {
         householder(A, QQL, i, i, true);
-        if(i < to - 2) householder(A, QQR, i, i + 1, false);
+        householder(A, QQR, i, i + 1, false);
 
 #ifdef DEBUG
         std::cout << "QQL = " << QQL << "\n";
@@ -189,13 +192,13 @@ int main() {
     srand((unsigned int)time(0));
 
     ublas::matrix<float> in;
-
+/*
     std::fstream f;
     f.open("data/pysvd.example", std::fstream::in);
     f >> in;
     f.close();
-
-//    random_fill(in, 1024);
+*/
+    random_fill(in, 1024, 512);
 
     ublas::matrix<float> ref = in;
 #ifdef DEBUG

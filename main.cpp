@@ -139,7 +139,10 @@ void householder(ublas::matrix<float>& A,
     }
 }
 
-void svd_II_stage(float* q, float* e, int n) {
+void svd_qr_shift(ublas::vector<float>& q,
+                  ublas::vector<float>& e) {
+    int n = q.size();
+
     bool goto_test_conv = false;
 
     for(int k = n-1; k >= 0; k--) {
@@ -273,6 +276,22 @@ void bidiag(ublas::matrix<float>& A,
 //        break;
 #endif
     }
+
+    ublas::vector<float> d(to, 0.0f);
+    ublas::vector<float> s(to + 1, 0.0f);
+
+    for(unsigned int i = 0; i < to; i++) {
+        d(i) = A(i, i);
+        if(i < (to - 1))
+            s(i + 1) = A(i, i+1);
+    }
+
+    //std::cout << d << "\n";
+    //std::cout << s << "\n";
+
+    svd_qr_shift(d, s);
+
+    std::cout << "Sigmas: " << d << "\n";
 }
 
 void random_fill(ublas::matrix<float>& A, unsigned int size1, unsigned int size2) {
@@ -315,12 +334,12 @@ int main() {
     //srand((unsigned int)time(0));
 
     ublas::matrix<float> in;
-
-//    std::fstream f;
-//    f.open("data/qr.example", std::fstream::in);
-//    f >> in;
-//    f.close();
-
+    /*
+    std::fstream f;
+    f.open("data/pysvd.example", std::fstream::in);
+    f >> in;
+    f.close();
+    */
     random_fill(in, 150, 150);
 
     ublas::matrix<float> ref = in;
@@ -332,7 +351,7 @@ int main() {
 
     bidiag(in, QQL, QQR);
 
-    std::cout << in << "\n";
+    //std::cout << in << "\n";
     ublas::matrix<float> result;
 
 #ifdef CHECK_RESULT

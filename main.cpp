@@ -13,360 +13,408 @@ static const int ITER_MAX = 50;
 
 namespace ublas = boost::numeric::ublas;
 
-//#define DEBUG
+// #define DEBUG
 #define CHECK_RESULT
 
-void eye(ublas::matrix<float>& m) {
-    for(unsigned int i = 0; i < m.size1(); i++)
-        for(unsigned int j = 0; j < m.size2(); j++)
-            m(i, j) = (i == j)?1.0f:0.0f;
+void eye(ublas::matrix < float >&m)
+{
+	for (unsigned int i = 0; i < m.size1(); i++)
+		for (unsigned int j = 0; j < m.size2(); j++)
+			m(i, j) = (i == j) ? 1.0f : 0.0f;
 }
 
-float sign(float val) {
-    return val >= 0.0f?1.0f:-1.0f;
+float sign(float val)
+{
+	return val >= 0.0f ? 1.0f : -1.0f;
 }
 
-float norm(ublas::vector<float>& x) {
-    float x_norm = 0.0;
-    for(unsigned int i = 0; i < x.size(); i++) x_norm += std::pow(x(i), 2);
-    x_norm = std::sqrt(x_norm);
-    return x_norm;
+float norm(ublas::vector < float >&x)
+{
+	float x_norm = 0.0;
+	for (unsigned int i = 0; i < x.size(); i++)
+		x_norm += std::pow(x(i), 2);
+	x_norm = std::sqrt(x_norm);
+	return x_norm;
 }
 
-void normalize(ublas::vector<float>& x) {
-    float x_norm = norm(x);
-    for(unsigned int i = 0; i < x.size(); i++) {
-        x(i) /= x_norm;
-    }
+void normalize(ublas::vector < float >&x)
+{
+	float x_norm = norm(x);
+	for (unsigned int i = 0; i < x.size(); i++) {
+		x(i) /= x_norm;
+	}
 }
 
-float pythag(float a, float b) {
-    float absa = fabs(a);
-    float absb = fabs(b);
+float pythag(float a, float b)
+{
+	float absa = fabs(a);
+	float absb = fabs(b);
 
-    if(absa > absb) {
-        return absa * sqrt(1.0f + pow(absb / absa, 2));
-    } else {
-        return absb * sqrt(1.0f + pow(absa / absb, 2));
-    }
+	if (absa > absb) {
+		return absa * sqrt(1.0f + pow(absb / absa, 2));
+	} else {
+		return absb * sqrt(1.0f + pow(absa / absb, 2));
+	}
 }
 
-void householder(ublas::matrix<float>& A,
-                 ublas::matrix<float>& QQ,
-                    unsigned int row_start,
-                    unsigned int col_start,
-                    bool column) {
-    unsigned int size = column?A.size1():A.size2();
-    unsigned int start = column?row_start:col_start;
+void
+householder(ublas::matrix < float >&A,
+	    ublas::matrix < float >&QQ,
+	    unsigned int row_start, unsigned int col_start, bool column)
+{
+	unsigned int size = column ? A.size1() : A.size2();
+	unsigned int start = column ? row_start : col_start;
 
-    if((start + 1) >= size) return ;
+	if ((start + 1) >= size)
+		return;
 
-    ublas::vector<float> x(size);
-	for(unsigned int i = 0 ; i < size; i++) {
-		if(i < start) {
+	ublas::vector < float > x(size);
+	for (unsigned int i = 0; i < size; i++) {
+		if (i < start) {
 			x(i) = 0;
 		} else {
-			if(column)
+			if (column)
 				x(i) = A(i, col_start);
 			else
 				x(i) = A(row_start, i);
 		}
 	}
 
-    float x_norm = norm(x);
-    float alpha = sign(x(start)) * x_norm;
+	float x_norm = norm(x);
+	float alpha = sign(x(start)) * x_norm;
 
 #ifdef DEBUG
-    std::cout << "||x|| = " << x_norm << "\n";
-    std::cout << "alpha = " << alpha << "\n";
+	std::cout << "||x|| = " << x_norm << "\n";
+	std::cout << "alpha = " << alpha << "\n";
 #endif
 
-    ublas::vector<float> v = x;
+	ublas::vector < float > v = x;
 
-    v(start) += alpha;
-    normalize(v);
+	v(start) += alpha;
+	normalize(v);
 
 #ifdef DEBUG
-    std::cout << "v = " << v << "\n";
+	std::cout << "v = " << v << "\n";
 #endif
 
-
-
-	ublas::matrix<float> Q;
+	ublas::matrix < float > Q;
 
 #ifdef DEBUG
 	Q.resize(size, size);
-    eye(Q);
+	eye(Q);
 
-    for(unsigned int i = start; i < Q.size1(); i++) {
-        for(unsigned int j = start; j < Q.size2(); j++) {
-            Q(i, j) = Q(i, j) - 2 * v(i) * v(j);
-        }
-    }
+	for (unsigned int i = start; i < Q.size1(); i++) {
+		for (unsigned int j = start; j < Q.size2(); j++) {
+			Q(i, j) = Q(i, j) - 2 * v(i) * v(j);
+		}
+	}
 
-    std::cout << "Q  = " << Q << "\n";
+	std::cout << "Q  = " << Q << "\n";
 #endif
 
-    if(column) {
-        for(unsigned int i = 0; i < A.size2(); i++) {
-            float sum_Av = 0.0f;
+	if (column) {
+		for (unsigned int i = 0; i < A.size2(); i++) {
+			float sum_Av = 0.0f;
 
-			for(unsigned int j = 0; j < A.size1(); j++) sum_Av = sum_Av + (v(j) * A(j, i));
-            for(unsigned int j = 0; j < A.size1(); j++) A(j, i) = A(j, i) - 2 * v(j) * sum_Av;
-        }
+			for (unsigned int j = 0; j < A.size1(); j++)
+				sum_Av = sum_Av + (v(j) * A(j, i));
+			for (unsigned int j = 0; j < A.size1(); j++)
+				A(j, i) = A(j, i) - 2 * v(j) * sum_Av;
+		}
 
-		for(unsigned int i = 0; i < A.size1(); i++) {
+		for (unsigned int i = 0; i < A.size1(); i++) {
 			float sum_Qv = 0.0f;
 
-            for(unsigned int j = 0; j < A.size1(); j++) sum_Qv = sum_Qv + (v(j) * QQ(i, j));
-            for(unsigned int j = 0; j < A.size1(); j++) QQ(i, j) = QQ(i, j) - 2 * v(j) * sum_Qv;
-        }
+			for (unsigned int j = 0; j < A.size1(); j++)
+				sum_Qv = sum_Qv + (v(j) * QQ(i, j));
+			for (unsigned int j = 0; j < A.size1(); j++)
+				QQ(i, j) = QQ(i, j) - 2 * v(j) * sum_Qv;
+		}
 
-    } else {
-        for(unsigned int i = 0; i < A.size1(); i++) {
-            float sum_Av = 0.0f;
+	} else {
+		for (unsigned int i = 0; i < A.size1(); i++) {
+			float sum_Av = 0.0f;
 
-			for(unsigned int j = 0; j < A.size2(); j++) sum_Av = sum_Av + (v(j) * A(i, j));
-            for(unsigned int j = 0; j < A.size2(); j++) A(i, j) = A(i, j) - 2 * v(j) * sum_Av;
-        }
+			for (unsigned int j = 0; j < A.size2(); j++)
+				sum_Av = sum_Av + (v(j) * A(i, j));
+			for (unsigned int j = 0; j < A.size2(); j++)
+				A(i, j) = A(i, j) - 2 * v(j) * sum_Av;
+		}
 
-		for(unsigned int i = 0; i < A.size2(); i++) {
+		for (unsigned int i = 0; i < A.size2(); i++) {
 			float sum_Qv = 0.0f;
 
-            for(unsigned int j = 0; j < A.size2(); j++) sum_Qv = sum_Qv + (v(j) * QQ(j ,i));
-            for(unsigned int j = 0; j < A.size2(); j++) QQ(j, i) = QQ(j, i) - 2 * v(j) * sum_Qv;
-        }
-    }
+			for (unsigned int j = 0; j < A.size2(); j++)
+				sum_Qv = sum_Qv + (v(j) * QQ(j, i));
+			for (unsigned int j = 0; j < A.size2(); j++)
+				QQ(j, i) = QQ(j, i) - 2 * v(j) * sum_Qv;
+		}
+	}
 }
 
-void svd_qr_shift(ublas::vector<float>& q,
-                  ublas::vector<float>& e) {
-    int n = q.size();
+void
+svd_qr_shift(ublas::matrix < float >&u,
+	     ublas::matrix < float >&v,
+	     ublas::vector < float >&q, ublas::vector < float >&e)
+{
+	int n = q.size();
+	int m = u.size1();
 
-    bool goto_test_conv = false;
+	std::cout << u.size1() << " " << u.size2() << "\n";
 
-    for(int k = n-1; k >= 0; k--) {
-        for(int iter = 0; iter < ITER_MAX; iter++) {
-            //test for split
-            int l;
-            for(l = k; k >= 0; l--) {
-                goto_test_conv = false;
-                if(fabs(e[l]) <= EPS) {
-                    //set it
-                    goto_test_conv = true;
-                    break;
-                }
+	bool goto_test_conv = false;
 
-                if(fabs(q[l-1]) <= EPS) {
-                    // goto
-                    break;
-                }
-            }
+	for (int k = n - 1; k >= 0; k--) {
+		for (int iter = 0; iter < ITER_MAX; iter++) {
+			// test for split
+			int l;
+			for (l = k; k >= 0; l--) {
+				goto_test_conv = false;
+				if (fabs(e[l]) <= EPS) {
+					// set it
+					goto_test_conv = true;
+					break;
+				}
 
-            if(!goto_test_conv) {
-                float c = 0.0;
-                float s = 1.0;
+				if (fabs(q[l - 1]) <= EPS) {
+					// goto
+					break;
+				}
+			}
 
-                //int l1 = l - 1;
+			if (!goto_test_conv) {
+				float c = 0.0;
+				float s = 1.0;
 
-                for(int i = l; i <= k; i++) {
-                    float f = s * e[i];
-                    e[i] = c * e[i];
+				int l1 = l - 1;
 
-                    if(fabs(f) <= EPS) {
-                        break;
-                    }
+				for (int i = l; i <= k; i++) {
+					float f = s * e[i];
+					e[i] = c * e[i];
 
-                    float g = q[i];
-                    float h = pythag(f, g);
-                    q[i] = h;
-                    c = g /h;
-                    s = -f / h;
-                }
-            }
+					if (fabs(f) <= EPS) {
+						break;
+					}
 
-            float z = q[k];
+					float g = q[i];
+					float h = pythag(f, g);
+					q[i] = h;
+					c = g / h;
+					s = -f / h;
 
-            if(l == k) {
-                if(z < 0.0f) {
-                    q[k] = -z;
-                }
+					for (int j = 0; j < m; j++) {
+						float y = u(j, l1);
+						float z = u(j, i);
+						u(j, l1) = y * c + z * s;
+						u(j, i) = -y * s + z * c;
+					}
+				}
+			}
 
-                break;
-            }
+			float z = q[k];
 
-            if(iter >= ITER_MAX - 1) {
-                break;
-            }
+			if (l == k) {
+				if (z < 0.0f) {
+					q[k] = -z;
+				}
 
-            float x = q[l];
-            float y = q[k-1];
-            float g = e[k-1];
-            float h = e[k];
-            float f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0*h*y);
-            g = pythag(f,1.0);
+				break;
+			}
 
-            if(f < 0) {
-                f = ((x-z)*(x+z)+h*(y/(f-g)-h)) / x;
-            } else {
-                f = ((x-z)*(x+z)+h*(y/(f+g)-h)) / x;
-            }
+			if (iter >= ITER_MAX - 1) {
+				break;
+			}
 
-            float c = 1.0;
-            float s = 1.0;
+			float x = q[l];
+			float y = q[k - 1];
+			float g = e[k - 1];
+			float h = e[k];
+			float
 
-            for(int i = l + 1; i <= k; i++) {
-                g = e[i];
-                y = q[i];
-                h = s*g;
-                g = c*g;
-                float z = pythag(f, h);
-                e[i-1] = z;
-                c = f / z;
-                s = h / z;
-                f = x*c+g*s;
-                g = -x*s+g*c;
-                h = y*s;
-                y = y*c;
+			 f = ((y - z) * (y + z) +
+			      (g - h) * (g + h)) / (2.0 * h * y);
+			g = pythag(f, 1.0);
 
-                /*
-                  ta-ta-da
-                */
+			if (f < 0) {
+				f = ((x - z) * (x + z) +
+				     h * (y / (f - g) - h)) / x;
+			} else {
+				f = ((x - z) * (x + z) +
+				     h * (y / (f + g) - h)) / x;
+			}
 
-                z = pythag(f,h);
-                q[i-1] = z;
-                c = f/z;
-                s = h/z;
-                f = c*g+s*y;
-                x = -s*g+c*y;
-                /*
-                  ta-ta-da
-                */
-            }
-            e[l] = 0.0;
-            e[k] = f;
-            q[k] = x;
-        }
-    }
+			float c = 1.0;
+			float s = 1.0;
+
+			for (int i = l + 1; i <= k; i++) {
+				g = e[i];
+				y = q[i];
+				h = s * g;
+				g = c * g;
+				float z = pythag(f, h);
+				e[i - 1] = z;
+				c = f / z;
+				s = h / z;
+				f = x * c + g * s;
+				g = -x * s + g * c;
+				h = y * s;
+				y = y * c;
+
+				for (int j = 0; j < n; j++) {
+					x = v(j, i - 1);
+					z = v(j, i);
+					v(j, i - 1) = x * c + z * s;
+					v(j, i) = -x * s + z * c;
+				}
+
+				z = pythag(f, h);
+				q[i - 1] = z;
+				c = f / z;
+				s = h / z;
+				f = c * g + s * y;
+				x = -s * g + c * y;
+
+				for (unsigned int j = 0; j < m; j++) {
+					float y = u(j, i - 1);
+					float z = u(j, i);
+					u(j, i - 1) = y * c + z * s;
+					u(j, i) = -y * s + z * c;
+				}
+			}
+			e[l] = 0.0;
+			e[k] = f;
+			q[k] = x;
+		}
+	}
 }
 
-
-void bidiag(ublas::matrix<float>& A,
-            ublas::matrix<float>& QQL,
-            ublas::matrix<float>& QQR) {
-    unsigned int row_num = A.size1();
+void
+svd(ublas::matrix < float >&A,
+       ublas::matrix < float >&QQL,
+       ublas::matrix < float >&QQW, ublas::matrix < float >&QQR)
+{
+	unsigned int row_num = A.size1();
 	unsigned int col_num = A.size2();
 
-    QQL.resize(row_num, row_num);
-    QQR.resize(col_num, col_num);
+	QQL.resize(row_num, row_num);
+    QQW.resize(row_num, col_num);
+	QQR.resize(col_num, col_num);
 
-    eye(QQL);
-    eye(QQR);
+	eye(QQL);
+	eye(QQR);
 
 	unsigned int to = std::min(row_num, col_num);
-    for(unsigned int i = 0; i < to; i++) {
-        householder(A, QQL, i, i, true);
-        householder(A, QQR, i, i + 1, false);
 
-#if 1
-//        std::cout << "QQL = " << QQL << "\n";
-//        std::cout << "QQR = " << QQR << "\n";
-//        std::cout << "AAA = " << A << "\n";
-//        std::cout << "*****************\n";
-//        break;
-#endif
-    }
+	for (unsigned int i = 0; i < to; i++) {
+		householder(A, QQL, i, i, true);
+		householder(A, QQR, i, i + 1, false);
+	}
 
-    ublas::vector<float> d(to, 0.0f);
-    ublas::vector<float> s(to + 1, 0.0f);
+	ublas::vector < float > d(to, 0.0f);
+	ublas::vector < float > s(to + 1, 0.0f);
 
-    for(unsigned int i = 0; i < to; i++) {
-        d(i) = A(i, i);
-        if(i < (to - 1))
-            s(i + 1) = A(i, i+1);
-    }
+	for (unsigned int i = 0; i < to; i++) {
+		d(i) = A(i, i);
+		if (i < (to - 1))
+			s(i + 1) = A(i, i + 1);
+	}
 
-    //std::cout << d << "\n";
-    //std::cout << s << "\n";
+	// std::cout << d << "\n";
+	// std::cout << s << "\n";
 
-    svd_qr_shift(d, s);
+	svd_qr_shift(QQL, QQR, d, s);
 
-    std::cout << "Sigmas: " << d << "\n";
+	// std::cout << "Sigmas: " << d << "\n";
+
+	for (unsigned int i = 0; i < to; i++)
+		QQW(i, i) = d(i);
+
 }
 
-void random_fill(ublas::matrix<float>& A, unsigned int size1, unsigned int size2) {
-    A.resize(size1, size2);
+void
+random_fill(ublas::matrix < float >&A, unsigned int size1, unsigned int size2)
+{
+	A.resize(size1, size2);
 
-    for(unsigned int i = 0; i < A.size1(); i++) {
-        for(unsigned int j = 0; j < A.size2(); j++) {
-            A(i, j) = (float)rand() / RAND_MAX;
-        }
-    }
+	for (unsigned int i = 0; i < A.size1(); i++) {
+		for (unsigned int j = 0; j < A.size2(); j++) {
+			A(i, j) = (float)rand() / RAND_MAX;
+		}
+	}
 }
 
-float matrix_compare(ublas::matrix<float>& res, ublas::matrix<float>& ref) {
-    float diff = 0.0;
+float matrix_compare(ublas::matrix < float >&res, ublas::matrix < float >&ref)
+{
+	float diff = 0.0;
 
-    for(unsigned int i = 0; i < res.size1(); i++) {
-        for(unsigned int j = 0; j < res.size2(); j++) {
-            diff = std::max(diff, std::abs(res(i, j) - ref(i,j)));
-        }
-    }
+	for (unsigned int i = 0; i < res.size1(); i++) {
+		for (unsigned int j = 0; j < res.size2(); j++) {
+			diff = std::max(diff, std::abs(res(i, j) - ref(i, j)));
+		}
+	}
 
-    return diff;
+	return diff;
 }
 
-bool check_bidiag(ublas::matrix<float>& A) {
-    const float EPS = 0.0001f;
+bool check_bidiag(ublas::matrix < float >&A)
+{
+	const float EPS = 0.0001f;
 
-    for(unsigned int i = 0; i < A.size1(); i++) {
-        for(unsigned int j = 0; j < A.size2(); j++) {
-            if((std::abs(A(i, j)) > EPS) && (i != j) && ((i + 1) != j)) {
-                std::cout << "Failed at " << i << " " << j << " " << A(i, j) << "\n";
-                return false;
-            }
-        }
-    }
-    return true;
+	for (unsigned int i = 0; i < A.size1(); i++) {
+		for (unsigned int j = 0; j < A.size2(); j++) {
+			if ((std::abs(A(i, j)) > EPS) && (i != j)
+			    && ((i + 1) != j)) {
+				std::
+				    cout << "Failed at " << i << " " << j << " "
+				    << A(i, j)
+				    << "\n";
+				return false;
+			}
+		}
+	}
+	return true;
 }
 
-int main() {
-    //srand((unsigned int)time(0));
+int main()
+{
+	// srand((unsigned int)time(0));
 
-    ublas::matrix<float> in;
-    /*
-    std::fstream f;
-    f.open("data/pysvd.example", std::fstream::in);
-    f >> in;
-    f.close();
-    */
-    random_fill(in, 150, 150);
+	ublas::matrix < float > in;
 
-    ublas::matrix<float> ref = in;
+	std::fstream f;
+	f.open("data/pysvd.example", std::fstream::in);
+	f >> in;
+	f.close();
+
+	// random_fill(in, 150, 150);
+
+	ublas::matrix < float > ref = in;
 #ifdef DEBUG
-    std::cout << in << "\n";
+	std::cout << in << "\n";
 #endif
-    ublas::matrix<float> QQL;
-    ublas::matrix<float> QQR;
+	ublas::matrix < float > QQL;
+    ublas::matrix < float > QQW;
+	ublas::matrix < float > QQR;
 
-    bidiag(in, QQL, QQR);
+    svd(in, QQL, QQW, QQR);
 
-    //std::cout << in << "\n";
-    ublas::matrix<float> result;
+	// std::cout << in << "\n";
+	ublas::matrix < float > result;
 
 #ifdef CHECK_RESULT
-//    std::cout << "QL: " << QQL << "\n";
-//    std::cout << "QR: " << QQR << "\n";
-//    std::cout << "A:: " << in << "\n";
+	std::cout << "QL: " << QQL << "\n";
+    std::cout << "QW: " << QQW << "\n";
+	std::cout << "QR: " << QQR << "\n";
+	// std::cout << "A:: " << in << "\n";
 
-    result = ublas::prod(in, QQR);
-    result = ublas::prod(QQL, result);
+     result = ublas::prod(QQW, QQR);
+     result = ublas::prod(QQL, result);
 
-    //std::cout << result << "\n";
+	// std::cout << result << "\n";
 #endif
 
-    std::cout << "DIFF    = " << matrix_compare(result, ref) << "\n";
-    std::cout << "Is bidiag " << check_bidiag(in) << "\n";
+	std::cout << "DIFF    = " << matrix_compare(result, ref) << "\n";
+	std::cout << "Is bidiag " << check_bidiag(in) << "\n";
 
-    return 0;
+	return 0;
 }

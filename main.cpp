@@ -13,7 +13,7 @@ static const int ITER_MAX = 50;
 
 namespace ublas = boost::numeric::ublas;
 
-// #define DEBUG
+//#define DEBUG
 #define CHECK_RESULT
 
 void eye(ublas::matrix < float >&m)
@@ -65,8 +65,8 @@ householder(ublas::matrix < float >&A,
 	unsigned int size = column ? A.size1() : A.size2();
 	unsigned int start = column ? row_start : col_start;
 
-	if ((start + 1) >= size)
-		return;
+	if (start >= size)
+		return;	
 
 	ublas::vector < float > x(size);
 	for (unsigned int i = 0; i < size; i++) {
@@ -83,12 +83,13 @@ householder(ublas::matrix < float >&A,
 	float x_norm = norm(x);
 	float alpha = sign(x(start)) * x_norm;
 
+	// std::cout << column << " " <<  start << " x = " << x(start) << "\n";
 #ifdef DEBUG
 	std::cout << "||x|| = " << x_norm << "\n";
 	std::cout << "alpha = " << alpha << "\n";
 #endif
 
-	ublas::vector < float > v = x;
+	ublas::vector<float> v = x;
 
 	v(start) += alpha;
 	normalize(v);
@@ -145,9 +146,9 @@ householder(ublas::matrix < float >&A,
 			float sum_Qv = 0.0f;
 
 			for (unsigned int j = 0; j < A.size2(); j++)
-				sum_Qv = sum_Qv + (v(j) * QQ(j, i));
+				sum_Qv = sum_Qv + (v(j) * QQ(i, j));
 			for (unsigned int j = 0; j < A.size2(); j++)
-				QQ(j, i) = QQ(j, i) - 2 * v(j) * sum_Qv;
+				QQ(i, j) = QQ(i, j) - 2 * v(j) * sum_Qv;
 		}
 	}
 }
@@ -165,6 +166,8 @@ svd_qr_shift(ublas::matrix < float >&u,
 	bool goto_test_conv = false;
 
 	for (int k = n - 1; k >= 0; k--) {
+		//std::cout << "U = " << u << std::endl;
+
 		for (int iter = 0; iter < ITER_MAX; iter++) {
 			// test for split
 			int l;
@@ -216,6 +219,9 @@ svd_qr_shift(ublas::matrix < float >&u,
 			if (l == k) {
 				if (z < 0.0f) {
 					q[k] = -z;
+
+					for(int j = 0; j < n; j++)
+						v(j, k) = -v(j,k);
 				}
 
 				break;
@@ -229,18 +235,14 @@ svd_qr_shift(ublas::matrix < float >&u,
 			float y = q[k - 1];
 			float g = e[k - 1];
 			float h = e[k];
-			float
-
-			 f = ((y - z) * (y + z) +
-			      (g - h) * (g + h)) / (2.0 * h * y);
+			float f = ((y - z) * (y + z) + (g - h) * (g + h)) / (2.0 * h * y);
+			
 			g = pythag(f, 1.0);
 
 			if (f < 0) {
-				f = ((x - z) * (x + z) +
-				     h * (y / (f - g) - h)) / x;
+				f = ((x - z) * (x + z) + h * (y / (f - g) - h)) / x;
 			} else {
-				f = ((x - z) * (x + z) +
-				     h * (y / (f + g) - h)) / x;
+				f = ((x - z) * (x + z) + h * (y / (f + g) - h)) / x;
 			}
 
 			float c = 1.0;
@@ -290,8 +292,9 @@ svd_qr_shift(ublas::matrix < float >&u,
 
 void
 svd(ublas::matrix < float >&A,
-       ublas::matrix < float >&QQL,
-       ublas::matrix < float >&QQW, ublas::matrix < float >&QQR)
+    	ublas::matrix < float >&QQL,
+    	ublas::matrix < float >&QQW, 
+		ublas::matrix < float >&QQR)
 {
 	unsigned int row_num = A.size1();
 	unsigned int col_num = A.size2();
@@ -322,9 +325,14 @@ svd(ublas::matrix < float >&A,
 	// std::cout << d << "\n";
 	// std::cout << s << "\n";
 
+	// std::cout << QQL << std::endl;
+	// std::cout << QQR << std::endl;
+
 	svd_qr_shift(QQL, QQR, d, s);
 
-	// std::cout << "Sigmas: " << d << "\n";
+	std::cout << "Sigmas: " << d << "\n";
+
+	QQW.clear();
 
 	for (unsigned int i = 0; i < to; i++)
 		QQW(i, i) = d(i);
@@ -380,13 +388,13 @@ int main()
 	// srand((unsigned int)time(0));
 
 	ublas::matrix < float > in;
-
+/*
 	std::fstream f;
 	f.open("data/pysvd.example", std::fstream::in);
 	f >> in;
 	f.close();
-
-	// random_fill(in, 150, 150);
+*/
+	random_fill(in, 250, 150);
 
 	ublas::matrix < float > ref = in;
 #ifdef DEBUG
@@ -402,13 +410,13 @@ int main()
 	ublas::matrix < float > result;
 
 #ifdef CHECK_RESULT
-	std::cout << "QL: " << QQL << "\n";
-    std::cout << "QW: " << QQW << "\n";
-	std::cout << "QR: " << QQR << "\n";
+	// std::cout << "QL: " << QQL << "\n";
+ //    std::cout << "QW: " << QQW << "\n";
+	// std::cout << "QR: " << QQR << "\n";
 	// std::cout << "A:: " << in << "\n";
 
-     result = ublas::prod(QQW, QQR);
-     result = ublas::prod(QQL, result);
+    result = ublas::prod(QQW, trans(QQR));
+	result = ublas::prod(QQL, result);
 
 	// std::cout << result << "\n";
 #endif

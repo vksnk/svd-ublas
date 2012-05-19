@@ -1,12 +1,4 @@
-#include <iostream>
-#include <fstream>
-
-#include <cmath>
-#include <ctime>
-
-#include <boost/numeric/ublas/vector.hpp>
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/io.hpp>
+#include "common.hpp"
 
 static const float EPS = 0.00001;
 static const int ITER_MAX = 50;
@@ -15,47 +7,6 @@ namespace ublas = boost::numeric::ublas;
 
 //#define DEBUG
 #define CHECK_RESULT
-
-void eye(ublas::matrix < float >&m)
-{
-	for (unsigned int i = 0; i < m.size1(); i++)
-		for (unsigned int j = 0; j < m.size2(); j++)
-			m(i, j) = (i == j) ? 1.0f : 0.0f;
-}
-
-float sign(float val)
-{
-	return val >= 0.0f ? 1.0f : -1.0f;
-}
-
-float norm(ublas::vector < float >&x)
-{
-	float x_norm = 0.0;
-	for (unsigned int i = 0; i < x.size(); i++)
-		x_norm += std::pow(x(i), 2);
-	x_norm = std::sqrt(x_norm);
-	return x_norm;
-}
-
-void normalize(ublas::vector < float >&x)
-{
-	float x_norm = norm(x);
-	for (unsigned int i = 0; i < x.size(); i++) {
-		x(i) /= x_norm;
-	}
-}
-
-float pythag(float a, float b)
-{
-	float absa = fabs(a);
-	float absb = fabs(b);
-
-	if (absa > absb) {
-		return absa * sqrt(1.0f + pow(absb / absa, 2));
-	} else {
-		return absb * sqrt(1.0f + pow(absa / absb, 2));
-	}
-}
 
 void
 householder(ublas::matrix < float >&A,
@@ -339,31 +290,6 @@ svd(ublas::matrix < float >&A,
 
 }
 
-void
-random_fill(ublas::matrix < float >&A, unsigned int size1, unsigned int size2)
-{
-	A.resize(size1, size2);
-
-	for (unsigned int i = 0; i < A.size1(); i++) {
-		for (unsigned int j = 0; j < A.size2(); j++) {
-			A(i, j) = (float)rand() / RAND_MAX;
-		}
-	}
-}
-
-float matrix_compare(ublas::matrix < float >&res, ublas::matrix < float >&ref)
-{
-	float diff = 0.0;
-
-	for (unsigned int i = 0; i < res.size1(); i++) {
-		for (unsigned int j = 0; j < res.size2(); j++) {
-			diff = std::max(diff, std::abs(res(i, j) - ref(i, j)));
-		}
-	}
-
-	return diff;
-}
-
 bool check_bidiag(ublas::matrix < float >&A)
 {
 	const float EPS = 0.0001f;
@@ -385,18 +311,20 @@ bool check_bidiag(ublas::matrix < float >&A)
 
 int main()
 {
-	// srand((unsigned int)time(0));
-
 	ublas::matrix < float > in;
-/*
+
 	std::fstream f;
-	f.open("data/pysvd.example", std::fstream::in);
+	f.open("data/wiki.example", std::fstream::in);
 	f >> in;
 	f.close();
-*/
-	random_fill(in, 250, 150);
+
+//  srand((unsigned int)time(0));
+//	random_fill(in, 250, 150);
 
 	ublas::matrix < float > ref = in;
+
+	pretty_print("Input:", in);
+
 #ifdef DEBUG
 	std::cout << in << "\n";
 #endif
@@ -420,6 +348,9 @@ int main()
 
 	// std::cout << result << "\n";
 #endif
+
+	pretty_print("Bidiag:", in);
+
 
 	std::cout << "DIFF    = " << matrix_compare(result, ref) << "\n";
 	std::cout << "Is bidiag " << check_bidiag(in) << "\n";

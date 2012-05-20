@@ -1,8 +1,5 @@
 #include "common.hpp"
 
-static const float EPS = 0.00001;
-static const int ITER_MAX = 50;
-
 namespace ublas = boost::numeric::ublas;
 
 //#define DEBUG

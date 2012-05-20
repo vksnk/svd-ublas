@@ -10,6 +10,9 @@
 
 namespace ublas = boost::numeric::ublas;
 
+static const float EPS = 0.00001;
+static const int ITER_MAX = 50;
+
 void pretty_print(const char* tag, ublas::matrix<float>& m)
 {
     printf("%s\n", tag);
@@ -31,6 +34,19 @@ void random_fill(ublas::matrix < float >&A, unsigned int size1, unsigned int siz
     for (unsigned int i = 0; i < A.size1(); i++) {
         for (unsigned int j = 0; j < A.size2(); j++) {
             A(i, j) = (float)rand() / RAND_MAX;
+        }
+    }
+}
+
+void random_sym_fill(ublas::matrix < float >&A, unsigned int size1, unsigned int size2)
+{
+    A.resize(size1, size2);
+
+    for (unsigned int i = 0; i < A.size1(); i++) {
+        for (unsigned int j = 0; j <= i; j++) {
+            float val = (float)rand() / RAND_MAX;
+            A(i, j) = val;
+            A(j, i) = val;
         }
     }
 }
